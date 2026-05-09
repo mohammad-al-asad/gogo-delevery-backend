@@ -6,8 +6,14 @@ import { uploadToS3 } from "../utils/s3-upload";
 
 type UploadType = "single" | "array" | "fields";
 
+type UploadField = {
+    name: string;
+    maxCount?: number;
+};
+
 interface UploadOptions {
-    fieldName: string;
+    fieldName?: string;
+    fields?: UploadField[];
     maxSizeMB?: number;
     uploadType?: UploadType;
     maxCount?: number;
@@ -16,11 +22,16 @@ interface UploadOptions {
 
 export const uploadFile = ({
     fieldName,
+    fields,
     maxSizeMB = 5,
     uploadType = "single",
     maxCount = 10,
     folder = "uploads",
 }: UploadOptions) => {
+    if (!fieldName && (!fields || fields.length === 0)) {
+        throw new Error("fieldName or fields is required for file upload");
+    }
+
     const multerInstance = multer({
         storage: multer.memoryStorage(),
         limits: { fileSize: maxSizeMB * 1024 * 1024 },
@@ -30,15 +41,20 @@ export const uploadFile = ({
 
     switch (uploadType) {
         case "single":
+            if (!fieldName) throw new Error("fieldName is required for single upload");
             uploader = multerInstance.single(fieldName);
             break;
         case "array":
+            if (!fieldName) throw new Error("fieldName is required for array upload");
             uploader = multerInstance.array(fieldName, maxCount);
             break;
         case "fields":
-            uploader = multerInstance.fields([{ name: fieldName, maxCount }]);
+            uploader = multerInstance.fields(
+                fields || [{ name: fieldName as string, maxCount }],
+            );
             break;
         default:
+            if (!fieldName) throw new Error("fieldName is required for single upload");
             uploader = multerInstance.single(fieldName);
     }
 

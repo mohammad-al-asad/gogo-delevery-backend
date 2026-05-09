@@ -4,6 +4,13 @@ import { authMiddleware, dashboardController } from "../../container";
 const dashboardRoute = Router();
 
 dashboardRoute.use(authMiddleware.authenticate);
+
+dashboardRoute.get(
+  "/rider/earnings",
+  authMiddleware.authorize(["Rider"]),
+  dashboardController.getRiderEarnings
+);
+
 dashboardRoute.use(authMiddleware.authorize(["Admin"]));
 
 dashboardRoute.get("/", dashboardController.getAdminDashboard);

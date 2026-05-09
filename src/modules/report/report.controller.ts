@@ -41,7 +41,7 @@ export class ReportController {
 
   getReportById = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction) => {
-      const report = await this.reportService.getReportById(req.user, req.params.id);
+      const report = await this.reportService.getReportById(req.user, req.params.id as string);
 
       res.status(HttpCodes.Ok).json({
         success: true,
@@ -55,7 +55,7 @@ export class ReportController {
     async (req: Request, res: Response, _next: NextFunction) => {
       const report = await this.reportService.resolveReport(
         req.user,
-        req.params.id,
+        req.params.id as string,
         req.body
       );
 

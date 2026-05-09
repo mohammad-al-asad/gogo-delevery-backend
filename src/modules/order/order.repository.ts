@@ -38,6 +38,14 @@ export class OrderRepository {
       }
     }
 
+    if (query.availableForRider === "true" || query.availableForRider === true) {
+      filter.$or = [
+        { paymentMethod: "Cash" },
+        { paymentMethod: { $exists: false } },
+        { paymentStatus: "Paid" },
+      ];
+    }
+
     const [data, total] = await Promise.all([
       Order.find(filter)
         .populate("user", "firstName lastName phoneNumber role")
@@ -60,6 +68,26 @@ export class OrderRepository {
 
   updateOrder = async (id: string, payload: any) => {
     return Order.findByIdAndUpdate(id, payload, { new: true })
+      .populate("user", "firstName lastName phoneNumber role")
+      .populate("rider", "firstName lastName phoneNumber role")
+      .populate("completionProof.submittedBy", "firstName lastName phoneNumber role");
+  };
+
+  acceptPendingOrder = async (id: string, payload: any) => {
+    return Order.findOneAndUpdate(
+      {
+        _id: id,
+        status: "Pending",
+        rider: null,
+        $or: [
+          { paymentMethod: "Cash" },
+          { paymentMethod: { $exists: false } },
+          { paymentStatus: "Paid" },
+        ],
+      },
+      payload,
+      { new: true }
+    )
       .populate("user", "firstName lastName phoneNumber role")
       .populate("rider", "firstName lastName phoneNumber role")
       .populate("completionProof.submittedBy", "firstName lastName phoneNumber role");

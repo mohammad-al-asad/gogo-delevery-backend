@@ -22,7 +22,7 @@ export class NotificationController {
     async (req: Request, res: Response, _next: NextFunction) => {
       const notification = await this.notificationService.markAsRead(
         req.user,
-        req.params.id
+        req.params.id as string
       );
 
       res.status(HttpCodes.Ok).json({

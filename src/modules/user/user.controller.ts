@@ -65,7 +65,7 @@ export class UserController {
 
   getUserById = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const user = await this.userService.getUserById(id);
       res.status(HttpCodes.Ok).json({
         success: true,
@@ -87,7 +87,7 @@ export class UserController {
 
   deleteUser = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const user = await this.userService.deleteUser(id);
       res.status(HttpCodes.Ok).json({
         success: true,
@@ -114,7 +114,7 @@ export class UserController {
 
   updateUser = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { id } = req.params
+      const id = req.params.id as string
       const body = req.body
       const user = await this.userService.updateUser(id, body)
       res.status(HttpCodes.Ok).json({
@@ -154,6 +154,32 @@ export class UserController {
       res.status(HttpCodes.Ok).json({
         success: true,
         message: "Profile updated successfully",
+        data: updatedUser,
+      });
+    }
+  );
+
+  updateMyDocuments = asyncHandler(
+    async (req: Request, res: Response, _next: NextFunction) => {
+      const files = req.files && !Array.isArray(req.files) ? req.files : {};
+      const body: Record<string, string> = {};
+
+      const setDocumentUrl = (fieldName: string) => {
+        const file = files[fieldName]?.[0] as (Express.Multer.File & { fileUrl?: string }) | undefined;
+        if (file?.fileUrl) {
+          body[fieldName] = file.fileUrl;
+        }
+      };
+
+      setDocumentUrl("emaratesId");
+      setDocumentUrl("drivingLicense");
+      setDocumentUrl("vehicleRegistration");
+
+      const updatedUser = await this.userService.updateMyDocuments(req.user, body);
+
+      res.status(HttpCodes.Ok).json({
+        success: true,
+        message: "Documents updated successfully",
         data: updatedUser,
       });
     }
@@ -228,7 +254,7 @@ export class UserController {
 
       const addresses = await this.userService.updateSavedAddress(
         userId,
-        req.params.addressId,
+        req.params.addressId as string,
         req.body
       );
 
@@ -250,7 +276,7 @@ export class UserController {
 
       const addresses = await this.userService.deleteSavedAddress(
         userId,
-        req.params.addressId
+        req.params.addressId as string
       );
 
       res.status(HttpCodes.Ok).json({

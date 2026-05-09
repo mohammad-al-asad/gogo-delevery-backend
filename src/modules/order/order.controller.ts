@@ -77,7 +77,7 @@ export class OrderController {
         throw new apiError(Errors.Unauthorized.code, Errors.Unauthorized.message);
       }
 
-      const order = await this.orderService.getOrderById(req.user, req.params.id);
+      const order = await this.orderService.getOrderById(req.user, req.params.id as string);
 
       res.status(HttpCodes.Ok).json({
         success: true,
@@ -93,14 +93,14 @@ export class OrderController {
         throw new apiError(Errors.Unauthorized.code, Errors.Unauthorized.message);
       }
 
-      const riderId = req.body.riderId;
+      const riderId = req.user.role === "Rider" ? req.user.userId : req.body.riderId;
       if (!riderId) {
         throw new apiError(HttpCodes.BadRequest, "riderId is required");
       }
 
       const order = await this.orderService.assignRider(
         req.user,
-        req.params.id,
+        req.params.id as string,
         riderId
       );
 
@@ -125,7 +125,7 @@ export class OrderController {
 
       const order = await this.orderService.updateOrderStatus(
         req.user,
-        req.params.id,
+        req.params.id as string,
         status
       );
 
@@ -150,7 +150,7 @@ export class OrderController {
 
       const order = await this.orderService.updateOrderPrice(
         req.user,
-        req.params.id,
+        req.params.id as string,
         price
       );
 
@@ -168,7 +168,7 @@ export class OrderController {
         throw new apiError(Errors.Unauthorized.code, Errors.Unauthorized.message);
       }
 
-      const order = await this.orderService.cancelOrder(req.user, req.params.id);
+      const order = await this.orderService.cancelOrder(req.user, req.params.id as string);
 
       res.status(HttpCodes.Ok).json({
         success: true,
@@ -186,7 +186,7 @@ export class OrderController {
 
       const order = await this.orderService.addReview(
         req.user,
-        req.params.id,
+        req.params.id as string,
         req.body
       );
 
@@ -211,7 +211,7 @@ export class OrderController {
 
       const order = await this.orderService.submitCompletionProof(
         req.user,
-        req.params.id,
+        req.params.id as string,
         {
           images,
           note: req.body.note,
@@ -232,7 +232,7 @@ export class OrderController {
         throw new apiError(Errors.Unauthorized.code, Errors.Unauthorized.message);
       }
 
-      const order = await this.orderService.deleteOrder(req.user, req.params.id);
+      const order = await this.orderService.deleteOrder(req.user, req.params.id as string);
 
       res.status(HttpCodes.Ok).json({
         success: true,
@@ -250,7 +250,7 @@ export class OrderController {
 
       const order = await this.orderService.markCheckpointReached(
         req.user,
-        req.params.id,
+        req.params.id as string,
         req.body
       );
 

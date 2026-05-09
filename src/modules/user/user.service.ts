@@ -59,6 +59,28 @@ export class UserService {
     return await this.userRepo.updateMyProfile(id, body);
   };
 
+  updateMyDocuments = async (currentUser: any, body: any) => {
+    if (!currentUser?.userId) {
+      throw new apiError(Errors.Unauthorized.code, Errors.Unauthorized.message);
+    }
+
+    const user = await this.userRepo.findUserById(currentUser.userId);
+
+    if (!user) {
+      throw new apiError(Errors.NotFound.code, Errors.NotFound.message);
+    }
+
+    if (user.role !== "Rider") {
+      throw new apiError(Errors.Forbidden.code, "Only riders can update documents");
+    }
+
+    if (Object.keys(body).length === 0) {
+      throw new apiError(400, "At least one document is required");
+    }
+
+    return await this.userRepo.updateMyProfile(currentUser.userId, body);
+  };
+
   updateRiderLocation = async (currentUser: any, body: updateRiderLocationType) => {
     if (!currentUser?.userId) {
       throw new apiError(Errors.Unauthorized.code, Errors.Unauthorized.message);

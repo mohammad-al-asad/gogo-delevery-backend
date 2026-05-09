@@ -45,6 +45,20 @@ userRoute.patch(
   validate(UpdateRiderLocationSchema),
   userController.updateRiderLocation
 );
+userRoute.patch(
+  "/me/documents",
+  authMiddleware.authorize(["Rider"]),
+  uploadFile({
+    uploadType: "fields",
+    fields: [
+      { name: "emaratesId", maxCount: 1 },
+      { name: "drivingLicense", maxCount: 1 },
+      { name: "vehicleRegistration", maxCount: 1 },
+    ],
+    folder: "driver-documents",
+  }),
+  userController.updateMyDocuments
+);
 userRoute.get("/me/addresses", userController.getSavedAddresses);
 userRoute.post(
   "/me/addresses",

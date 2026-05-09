@@ -16,6 +16,7 @@ export const CreateOrderSchema = z.object({
   price: z.number().min(0),
   distanceKm: z.number().min(0).optional(),
   paymentStatus: z.enum(["Unpaid", "Paid", "Refunded"]).optional(),
+  paymentMethod: z.enum(["Card", "Cash"]).optional(),
   vehicleType: z.enum(["Bike", "Car", "Truck"]).optional(),
   notes: z.string().trim().optional(),
 });
@@ -27,7 +28,7 @@ export const EstimateOrderPriceSchema = z.object({
 });
 
 export const AssignRiderSchema = z.object({
-  riderId: z.string().min(1),
+  riderId: z.string().min(1).optional(),
 });
 
 export const UpdateOrderStatusSchema = z.object({

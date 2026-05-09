@@ -181,6 +181,11 @@ const orderSchema = new Schema(
       enum: ["Unpaid", "Paid", "Refunded"],
       default: "Unpaid",
     },
+    paymentMethod: {
+      type: String,
+      enum: ["Card", "Cash"],
+      default: "Cash",
+    },
     notes: {
       type: String,
       trim: true,

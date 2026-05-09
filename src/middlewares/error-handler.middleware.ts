@@ -11,7 +11,7 @@ export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   let message: any;
   let statusCode: number;
@@ -52,7 +52,7 @@ export const errorHandler = (
       error: formatForLog(errorResponse),
       statusCode,
     },
-    "Request failed"
+    "Request failed",
   );
 
   return res.status(statusCode).json(errorResponse);

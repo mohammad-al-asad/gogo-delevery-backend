@@ -88,22 +88,26 @@ const userSchema = new Schema(
     status: {
       type: String,
       enum: ["Pending", "Approved", "Blocked"],
-      default: function () {
+      default: function (this: any) {
         return this.role === "Rider" ? "Pending" : "Approved";
       },
       index: true,
     },
     emaratesId: {
       type: String,
-      required: function () {
+      required: function (this: any) {
         return this.role === "Rider";
       },
     },
     drivingLicense: {
       type: String,
-      required: function () {
+      required: function (this: any) {
         return this.role === "Rider";
       },
+    },
+    vehicleRegistration: {
+      type: String,
+      trim: true,
     },
     location: {
       latitude: { type: Number },

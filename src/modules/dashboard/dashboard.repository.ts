@@ -1,6 +1,7 @@
 import Order from "../order/order.model";
 import Payment from "../payment/payment.model";
 import User from "../user/user.model";
+import { Types } from "mongoose";
 
 type DashboardFilters = {
   dateFrom: Date;
@@ -30,6 +31,23 @@ const MONTH_LABELS = [
 ];
 
 export class DashboardRepository {
+  private getRiderEarningsDateRanges() {
+    const now = new Date();
+
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 6);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const monthStart = new Date(now);
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    return { now, todayStart, weekStart, monthStart };
+  }
+
   private buildOrderAttributeMatch(filters: DashboardFilters) {
     const match: Record<string, any> = {};
 
@@ -434,6 +452,142 @@ export class DashboardRepository {
       .sort({ createdAt: -1 })
       .limit(filters.recentLimit)
       .lean();
+  };
+
+  getRiderEarnings = async (riderId: string, recentLimit: number) => {
+    const riderObjectId = new Types.ObjectId(riderId);
+    const { now, todayStart, weekStart, monthStart } = this.getRiderEarningsDateRanges();
+    const baseMatch = {
+      rider: riderObjectId,
+      status: "Completed" as const,
+    };
+    const paidMatch = {
+      ...baseMatch,
+      paymentStatus: "Paid",
+    };
+
+    const [summary, pendingSummary, dailyTrend, transactions] = await Promise.all([
+      Order.aggregate([
+        { $match: paidMatch },
+        {
+          $addFields: {
+            earningDate: { $ifNull: ["$completedAt", "$updatedAt"] },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$price" },
+            today: {
+              $sum: {
+                $cond: [{ $gte: ["$earningDate", todayStart] }, "$price", 0],
+              },
+            },
+            week: {
+              $sum: {
+                $cond: [{ $gte: ["$earningDate", weekStart] }, "$price", 0],
+              },
+            },
+            month: {
+              $sum: {
+                $cond: [{ $gte: ["$earningDate", monthStart] }, "$price", 0],
+              },
+            },
+          },
+        },
+      ]),
+      Order.aggregate([
+        {
+          $match: {
+            ...baseMatch,
+            paymentStatus: { $ne: "Paid" },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            pending: { $sum: "$price" },
+          },
+        },
+      ]),
+      Order.aggregate([
+        { $match: paidMatch },
+        {
+          $addFields: {
+            earningDate: { $ifNull: ["$completedAt", "$updatedAt"] },
+          },
+        },
+        {
+          $match: {
+            earningDate: {
+              $gte: weekStart,
+              $lte: now,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$earningDate",
+              },
+            },
+            amount: { $sum: "$price" },
+            rides: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        {
+          $project: {
+            _id: 0,
+            date: "$_id",
+            amount: 1,
+            rides: 1,
+          },
+        },
+      ]),
+      Order.find(baseMatch)
+        .sort({ completedAt: -1, updatedAt: -1 })
+        .limit(recentLimit)
+        .lean(),
+    ]);
+
+    const totals = summary[0] || {
+      total: 0,
+      today: 0,
+      week: 0,
+      month: 0,
+    };
+
+    return {
+      total: Number((totals.total || 0).toFixed(2)),
+      today: Number((totals.today || 0).toFixed(2)),
+      week: Number((totals.week || 0).toFixed(2)),
+      month: Number((totals.month || 0).toFixed(2)),
+      pending: Number(((pendingSummary[0]?.pending || 0)).toFixed(2)),
+      dailyTrend: dailyTrend.map((item) => ({
+        date: item.date,
+        amount: Number((item.amount || 0).toFixed(2)),
+        rides: item.rides || 0,
+      })),
+      transactions: transactions.map((order: any) => {
+        const destination =
+          order.dropoff?.label ||
+          order.dropoff?.addressLine ||
+          "destination";
+
+        return {
+          id: String(order._id),
+          type: "ride",
+          amount: Number((order.price || 0).toFixed(2)),
+          status: order.paymentStatus === "Paid" ? "completed" : "pending",
+          date: order.completedAt || order.updatedAt || order.createdAt,
+          description: `Ride to ${destination}`,
+          rideId: String(order._id),
+        };
+      }),
+    };
   };
 
   getHotAreas = async (filters: DashboardFilters) => {

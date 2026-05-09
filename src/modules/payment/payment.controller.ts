@@ -64,7 +64,7 @@ export class PaymentController {
         throw new apiError(Errors.Unauthorized.code, Errors.Unauthorized.message);
       }
 
-      const payment = await this.paymentService.getPaymentById(req.user, req.params.id);
+      const payment = await this.paymentService.getPaymentById(req.user, req.params.id as string);
 
       res.status(HttpCodes.Ok).json({
         success: true,
@@ -82,7 +82,7 @@ export class PaymentController {
 
       const payments = await this.paymentService.getPaymentsByOrderId(
         req.user,
-        req.params.orderId
+        req.params.orderId as string
       );
 
       res.status(HttpCodes.Ok).json({

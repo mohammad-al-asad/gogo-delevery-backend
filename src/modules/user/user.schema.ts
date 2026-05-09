@@ -11,6 +11,7 @@ const BaseUserSchema = z.object({
   role: z.enum(["Admin", "User", "Rider"]),
   emaratesId: z.string().optional(),
   drivingLicense: z.string().optional(),
+  vehicleRegistration: z.string().optional(),
 });
 
 export const CreateUserSchema = BaseUserSchema.superRefine((data, ctx) => {

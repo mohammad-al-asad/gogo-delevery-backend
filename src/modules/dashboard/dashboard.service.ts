@@ -51,6 +51,12 @@ export class DashboardService {
     }
   }
 
+  private ensureRider(currentUser: any) {
+    if (currentUser.role !== "Rider") {
+      throw new apiError(Errors.Forbidden.code, "Only riders can access rider earnings");
+    }
+  }
+
   private buildFilters(query: DashboardQuery) {
     const { dateFrom, dateTo } = this.getDateRange(query);
 
@@ -225,6 +231,15 @@ export class DashboardService {
       commission: Number((order.price * 0.1).toFixed(2)),
       parcel: String(order._id),
     }));
+  };
+
+  getRiderEarnings = async (currentUser: any, query: DashboardQuery) => {
+    this.ensureRider(currentUser);
+
+    return this.dashboardRepository.getRiderEarnings(
+      currentUser.userId,
+      query.recentLimit ?? 10,
+    );
   };
 
   getHotAreas = async (currentUser: any, query: DashboardQuery) => {

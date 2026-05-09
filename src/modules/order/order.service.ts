@@ -142,6 +142,8 @@ export class OrderService {
     if (currentUser.role === "Rider") {
       if (query.scope === "available") {
         scopedQuery.unassigned = true;
+        scopedQuery.status = "Pending";
+        scopedQuery.availableForRider = true;
         delete scopedQuery.riderId;
       } else {
         scopedQuery.riderId = currentUser.userId;
@@ -185,17 +187,25 @@ export class OrderService {
       throw new apiError(Errors.NotFound.code, "Order not found");
     }
 
-    if (order.status === "Completed" || order.status === "Cancelled") {
-      throw new apiError(400, "Cannot assign rider to a completed or cancelled order");
-    }
-
     if (currentUser.role === "Rider") {
+      if (order.status !== "Pending") {
+        throw new apiError(400, "Only pending orders can be accepted");
+      }
+
+      if ((order as any).paymentMethod === "Card" && order.paymentStatus !== "Paid") {
+        throw new apiError(400, "Card orders must be paid before accepting");
+      }
+
       if (currentUser.userId !== riderId) {
         throw new apiError(Errors.Forbidden.code, "Rider can only assign themselves");
       }
       if (this.getActorId(order.rider) !== null && this.getActorId(order.rider) !== currentUser.userId) {
         throw new apiError(Errors.Forbidden.code, "Order already assigned to another rider");
       }
+    }
+
+    if (order.status === "Completed" || order.status === "Cancelled") {
+      throw new apiError(400, "Cannot assign rider to a completed or cancelled order");
     }
 
     const rider = await this.userRepo.findUserById(riderId);
@@ -217,6 +227,19 @@ export class OrderService {
           "Rider assigned"
         ),
       };
+    }
+
+    if (currentUser.role === "Rider") {
+      const acceptedOrder = await this.orderRepo.acceptPendingOrder(
+        orderId,
+        updatePayload
+      );
+
+      if (!acceptedOrder) {
+        throw new apiError(400, "Order is no longer available");
+      }
+
+      return acceptedOrder;
     }
 
     return this.orderRepo.updateOrder(orderId, updatePayload);
